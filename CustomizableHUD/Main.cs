@@ -163,7 +163,6 @@ namespace CustomizableHUD
                     ModSettingsManager.AddOption(new CheckBoxOption((ConfigEntry<bool>)ceb, new CheckBoxConfig()), "CH.TabID." + tabID, "CH: " + Name);
                 }
             }
-            CharacterBody.onBodyStartGlobal += CharacterBody_onBodyStartGlobal;
             On.RoR2.UI.HUD.Awake += HUD_Awake;
         }
 
@@ -173,17 +172,9 @@ namespace CustomizableHUD
 
         private void HUD_Awake(On.RoR2.UI.HUD.orig_Awake orig, HUD self)
         {
-            hud = self;
             orig(self);
-        }
-
-        private void CharacterBody_onBodyStartGlobal(CharacterBody body)
-        {
-            foreach (var component in InstanceTracker.GetInstancesList<HUDControllerComponent>())
-            {
-                if (body == component.hud.)
-                    // i dont have hud in the component
-            }
+            self.targetBodyObject.AddComponent<HUDControllerComponent>();
+            hud = self;
         }
 
         private void WithinDestructionLotusAlbum()
@@ -197,7 +188,7 @@ namespace CustomizableHUD
 
     public class HUDControllerComponent : MonoBehaviour
     {
-        public GameObject owner;
+        public HUD hud;
         // is this gonna be useful at all
 
         private Transform mainContainer;
@@ -323,127 +314,122 @@ namespace CustomizableHUD
 
         private void Start()
         {
-            if (LocalUserManager.GetFirstLocalUser().cameraRigController)
-            {
-                var localCameraRig = LocalUserManager.GetFirstLocalUser().cameraRigController;
-                if (localCameraRig.isHudAllowed)
-                {
-                    mainContainer = localCameraRig.hud.mainContainer.transform;
-                    buildLabel = mainContainer.GetChild(0).gameObject;
-                    scopeContainer = mainContainer.GetChild(2).gameObject;
+            hud = Main.hud;
 
-                    notifArea = mainContainer.GetChild(4).gameObject;
+            mainContainer = hud.mainContainer.transform;
+            buildLabel = mainContainer.GetChild(0).gameObject;
+            scopeContainer = mainContainer.GetChild(2).gameObject;
 
-                    mapNameCluster = mainContainer.GetChild(3).gameObject;
+            notifArea = mainContainer.GetChild(4).gameObject;
 
-                    mapName = mapNameCluster.transform.GetChild(0).gameObject;
-                    mapSubtitle = mapNameCluster.transform.GetChild(1).gameObject;
+            mapNameCluster = mainContainer.GetChild(3).gameObject;
 
-                    mainUIArea = mainContainer.GetChild(7).gameObject;
+            mapName = mapNameCluster.transform.GetChild(0).gameObject;
+            mapSubtitle = mapNameCluster.transform.GetChild(1).gameObject;
 
-                    hitmarker = mainUIArea.transform.GetChild(0).gameObject;
-                    crosshair = mainUIArea.transform.GetChild(1).gameObject;
+            mainUIArea = mainContainer.GetChild(7).gameObject;
 
-                    mainCanvas2 = mainUIArea.transform.GetChild(2).gameObject;
-                    bottomLeft = mainCanvas2.transform.GetChild(0).gameObject;
+            hitmarker = mainUIArea.transform.GetChild(0).gameObject;
+            crosshair = mainUIArea.transform.GetChild(1).gameObject;
 
-                    chatBox = bottomLeft.transform.GetChild(0).gameObject;
-                    hpLevelVal = bottomLeft.transform.GetChild(1).GetChild(0).gameObject;
-                    hpLevelBar = bottomLeft.transform.GetChild(1).GetChild(1).gameObject;
+            mainCanvas2 = mainUIArea.transform.GetChild(2).gameObject;
+            bottomLeft = mainCanvas2.transform.GetChild(0).gameObject;
 
-                    upperRight = mainCanvas2.transform.GetChild(1).GetChild(0).gameObject;
-                    timerPanel = upperRight.transform.GetChild(0).gameObject;
+            chatBox = bottomLeft.transform.GetChild(0).gameObject;
+            hpLevelVal = bottomLeft.transform.GetChild(1).GetChild(0).gameObject;
+            hpLevelBar = bottomLeft.transform.GetChild(1).GetChild(1).gameObject;
 
-                    stupidWormgear = timerPanel.transform.GetChild(0).gameObject;
-                    timerText = timerPanel.transform.GetChild(1).gameObject;
-                    diffPanel = upperRight.transform.GetChild(1).gameObject;
+            upperRight = mainCanvas2.transform.GetChild(1).GetChild(0).gameObject;
+            timerPanel = upperRight.transform.GetChild(0).gameObject;
 
-                    stageAmbientPanel = upperRight.transform.GetChild(2).gameObject;
+            stupidWormgear = timerPanel.transform.GetChild(0).gameObject;
+            timerText = timerPanel.transform.GetChild(1).gameObject;
+            diffPanel = upperRight.transform.GetChild(1).gameObject;
 
-                    stage = stageAmbientPanel.transform.GetChild(0).gameObject;
-                    ambient = stageAmbientPanel.transform.GetChild(1).gameObject;
+            stageAmbientPanel = upperRight.transform.GetChild(2).gameObject;
 
-                    diffBar = upperRight.transform.GetChild(3).gameObject;
+            stage = stageAmbientPanel.transform.GetChild(0).gameObject;
+            ambient = stageAmbientPanel.transform.GetChild(1).gameObject;
 
-                    coolWormgear = diffBar.transform.GetChild(0).gameObject;
-                    scroller = diffBar.transform.GetChild(1).gameObject;
-                    marker = diffBar.transform.GetChild(3).gameObject;
+            diffBar = upperRight.transform.GetChild(3).gameObject;
 
-                    outline = upperRight.transform.GetChild(4).gameObject;
+            coolWormgear = diffBar.transform.GetChild(0).gameObject;
+            scroller = diffBar.transform.GetChild(1).gameObject;
+            marker = diffBar.transform.GetChild(3).gameObject;
 
-                    objectiveArtifact = upperRight.transform.GetChild(5).gameObject;
+            outline = upperRight.transform.GetChild(4).gameObject;
 
-                    artifact = objectiveArtifact.transform.GetChild(0).gameObject;
-                    objective = objectiveArtifact.transform.GetChild(1).gameObject;
+            objectiveArtifact = upperRight.transform.GetChild(5).gameObject;
 
-                    bottomRight = mainCanvas2.transform.GetChild(2).GetChild(0).gameObject;
-                    altEquipRoot = bottomRight.transform.GetChild(1).GetChild(0).gameObject;
+            artifact = objectiveArtifact.transform.GetChild(0).gameObject;
+            objective = objectiveArtifact.transform.GetChild(1).gameObject;
 
-                    altEquipBg = altEquipRoot.transform.GetChild(1).gameObject;
-                    altEquipText = altEquipRoot.transform.GetChild(4).gameObject;
+            bottomRight = mainCanvas2.transform.GetChild(2).GetChild(0).gameObject;
+            altEquipRoot = bottomRight.transform.GetChild(1).GetChild(0).gameObject;
 
-                    equipRoot = bottomRight.transform.GetChild(2).GetChild(1).gameObject;
+            altEquipBg = altEquipRoot.transform.GetChild(1).gameObject;
+            altEquipText = altEquipRoot.transform.GetChild(4).gameObject;
 
-                    equipBg = equipRoot.transform.GetChild(1).gameObject;
-                    equipText = equipRoot.transform.GetChild(4).gameObject;
+            equipRoot = bottomRight.transform.GetChild(2).GetChild(1).gameObject;
 
-                    primaryRoot = bottomRight.transform.GetChild(3).gameObject;
+            equipBg = equipRoot.transform.GetChild(1).gameObject;
+            equipText = equipRoot.transform.GetChild(4).gameObject;
 
-                    primaryText = primaryRoot.transform.GetChild(5).gameObject;
+            primaryRoot = bottomRight.transform.GetChild(3).gameObject;
 
-                    secondaryRoot = bottomRight.transform.GetChild(4).gameObject;
+            primaryText = primaryRoot.transform.GetChild(5).gameObject;
 
-                    secondaryText = secondaryRoot.transform.GetChild(5).gameObject;
+            secondaryRoot = bottomRight.transform.GetChild(4).gameObject;
 
-                    utilityRoot = bottomRight.transform.GetChild(5).gameObject;
+            secondaryText = secondaryRoot.transform.GetChild(5).gameObject;
 
-                    utilityText = utilityRoot.transform.GetChild(5).gameObject;
+            utilityRoot = bottomRight.transform.GetChild(5).gameObject;
 
-                    specialRoot = bottomRight.transform.GetChild(6).gameObject;
+            utilityText = utilityRoot.transform.GetChild(5).gameObject;
 
-                    specialText = specialRoot.transform.GetChild(5).gameObject;
+            specialRoot = bottomRight.transform.GetChild(6).gameObject;
 
-                    sprintCluster = bottomRight.transform.GetChild(7).gameObject;
+            specialText = specialRoot.transform.GetChild(5).gameObject;
 
-                    sprintText = sprintCluster.transform.GetChild(1).gameObject;
-                    sprintIcon = sprintCluster.transform.GetChild(3).gameObject;
+            sprintCluster = bottomRight.transform.GetChild(7).gameObject;
 
-                    inventoryCluster = bottomRight.transform.GetChild(8).gameObject;
+            sprintText = sprintCluster.transform.GetChild(1).gameObject;
+            sprintIcon = sprintCluster.transform.GetChild(3).gameObject;
 
-                    inventoryText = inventoryCluster.transform.GetChild(0).gameObject;
-                    inventoryIcon = inventoryCluster.transform.GetChild(2).gameObject;
+            inventoryCluster = bottomRight.transform.GetChild(8).gameObject;
 
-                    upperLeft = mainCanvas2.transform.GetChild(3).gameObject;
+            inventoryText = inventoryCluster.transform.GetChild(0).gameObject;
+            inventoryIcon = inventoryCluster.transform.GetChild(2).gameObject;
 
-                    // special case
-                    upperLeftOutline = upperLeft.GetComponent<Image>();
-                    //
+            upperLeft = mainCanvas2.transform.GetChild(3).gameObject;
 
-                    moneyRoot = upperLeft.transform.GetChild(0).gameObject;
+            // special case
+            upperLeftOutline = upperLeft.GetComponent<Image>();
+            //
 
-                    moneyBg = moneyRoot.transform.GetChild(0).gameObject;
-                    moneyIcon = moneyRoot.transform.GetChild(4).gameObject;
+            moneyRoot = upperLeft.transform.GetChild(0).gameObject;
 
-                    lunarRoot = upperLeft.transform.GetChild(2).gameObject;
+            moneyBg = moneyRoot.transform.GetChild(0).gameObject;
+            moneyIcon = moneyRoot.transform.GetChild(4).gameObject;
 
-                    lunarBg = lunarRoot.transform.GetChild(0).gameObject;
-                    lunarIcon = lunarRoot.transform.GetChild(4).gameObject;
+            lunarRoot = upperLeft.transform.GetChild(2).gameObject;
 
-                    bottomCenter = mainCanvas2.transform.GetChild(4).gameObject;
+            lunarBg = lunarRoot.transform.GetChild(0).gameObject;
+            lunarIcon = lunarRoot.transform.GetChild(4).gameObject;
 
-                    spectatorLabel = bottomCenter.transform.GetChild(0).gameObject;
+            bottomCenter = mainCanvas2.transform.GetChild(4).gameObject;
 
-                    topCenter = mainCanvas2.transform.GetChild(5).gameObject;
+            spectatorLabel = bottomCenter.transform.GetChild(0).gameObject;
 
-                    // special case
-                    topCenterOutline = topCenter.transform.GetChild(0).GetChild(0).GetComponent<Image>();
-                    //
+            topCenter = mainCanvas2.transform.GetChild(5).gameObject;
 
-                    bossRoot = topCenter.transform.GetChild(1).GetChild(0).gameObject;
-                    bossLabel = bossRoot.transform.GetChild(1).gameObject;
-                    bossSubtitle = bossRoot.transform.GetChild(2).gameObject;
-                }
-            }
+            // special case
+            topCenterOutline = topCenter.transform.GetChild(0).GetChild(0).GetComponent<Image>();
+            //
+
+            bossRoot = topCenter.transform.GetChild(1).GetChild(0).gameObject;
+            bossLabel = bossRoot.transform.GetChild(1).gameObject;
+            bossSubtitle = bossRoot.transform.GetChild(2).gameObject;
         }
 
         private void FixedUpdate()
@@ -451,94 +437,86 @@ namespace CustomizableHUD
             timer += Time.fixedDeltaTime;
             if (timer > interval)
             {
-                if (LocalUserManager.GetFirstLocalUser().cameraRigController)
-                {
-                    var localCameraRig = LocalUserManager.GetFirstLocalUser().cameraRigController;
-                    if (localCameraRig.isHudAllowed)
-                    {
-                        // buildLabel.SetActive(Main.showBuildLabel.Value);
+                buildLabel.SetActive(Main.showBuildLabel.Value);
 
-                        /*
-                        scopeContainer.SetActive(Main.showScope.Value);
+                scopeContainer.SetActive(Main.showScope.Value);
 
-                        notifArea.SetActive(Main.showNotifArea.Value);
+                notifArea.SetActive(Main.showNotifArea.Value);
 
-                        mapName.SetActive(Main.showMapName.Value);
-                        mapSubtitle.SetActive(Main.showMapSubtitle.Value);
+                mapName.SetActive(Main.showMapName.Value);
+                mapSubtitle.SetActive(Main.showMapSubtitle.Value);
 
-                        hitmarker.SetActive(Main.showHitmarker.Value);
-                        crosshair.SetActive(Main.showCrosshair.Value);
+                hitmarker.SetActive(Main.showHitmarker.Value);
+                crosshair.SetActive(Main.showCrosshair.Value);
 
-                        bottomLeft.SetActive(Main.showBottomLeft.Value);
+                bottomLeft.SetActive(Main.showBottomLeft.Value);
+                /*
+                chatBox.SetActive(Main.showChatBox.Value);
+                hpLevelVal.SetActive(Main.showHpLevelVal.Value);
+                hpLevelBar.SetActive(Main.showHpLevelBar.Value);
 
-                        chatBox.SetActive(Main.showChatBox.Value);
-                        hpLevelVal.SetActive(Main.showHpLevelVal.Value);
-                        hpLevelBar.SetActive(Main.showHpLevelBar.Value);
+                upperRight.SetActive(Main.showUpperRight.Value);
 
-                        upperRight.SetActive(Main.showUpperRight.Value);
+                stupidWormgear.SetActive(Main.showStupidWormgear.Value);
+                timerText.SetActive(Main.showTimerText.Value);
 
-                        stupidWormgear.SetActive(Main.showStupidWormgear.Value);
-                        timerText.SetActive(Main.showTimerText.Value);
+                stage.SetActive(Main.showStage.Value);
+                ambient.SetActive(Main.showAmbient.Value);
 
-                        stage.SetActive(Main.showStage.Value);
-                        ambient.SetActive(Main.showAmbient.Value);
+                diffBar.SetActive(Main.showDiffPanel.Value);
 
-                        diffBar.SetActive(Main.showDiffPanel.Value);
+                coolWormgear.SetActive(Main.showCoolWormgear.Value);
+                scroller.SetActive(Main.showScroller.Value);
+                marker.SetActive(Main.showMarker.Value);
 
-                        coolWormgear.SetActive(Main.showCoolWormgear.Value);
-                        scroller.SetActive(Main.showScroller.Value);
-                        marker.SetActive(Main.showMarker.Value);
+                outline.SetActive(Main.showOutline.Value);
 
-                        outline.SetActive(Main.showOutline.Value);
+                artifact.SetActive(Main.showArtifact.Value);
+                objective.SetActive(Main.showObjective.Value);
 
-                        artifact.SetActive(Main.showArtifact.Value);
-                        objective.SetActive(Main.showObjective.Value);
+                bottomRight.SetActive(Main.showBottomRight.Value);
 
-                        bottomRight.SetActive(Main.showBottomRight.Value);
+                altEquipBg.SetActive(Main.showAltEquipBg.Value);
+                altEquipText.SetActive(Main.showAltEquipText.Value);
 
-                        altEquipBg.SetActive(Main.showAltEquipBg.Value);
-                        altEquipText.SetActive(Main.showAltEquipText.Value);
+                equipBg.SetActive(Main.showEquipBg.Value);
+                equipText.SetActive(Main.showAltEquipText.Value);
 
-                        equipBg.SetActive(Main.showEquipBg.Value);
-                        equipText.SetActive(Main.showAltEquipText.Value);
+                primaryText.SetActive(Main.showSkillText.Value);
 
-                        primaryText.SetActive(Main.showSkillText.Value);
+                secondaryText.SetActive(Main.showSkillText.Value);
 
-                        secondaryText.SetActive(Main.showSkillText.Value);
+                utilityText.SetActive(Main.showSkillText.Value);
 
-                        utilityText.SetActive(Main.showSkillText.Value);
+                specialText.SetActive(Main.showSkillText.Value);
 
-                        specialText.SetActive(Main.showSkillText.Value);
+                sprintText.SetActive(Main.showSprintText.Value);
+                sprintIcon.SetActive(Main.showSprintIcon.Value);
 
-                        sprintText.SetActive(Main.showSprintText.Value);
-                        sprintIcon.SetActive(Main.showSprintIcon.Value);
+                inventoryText.SetActive(Main.showInventoryText.Value);
+                inventoryIcon.SetActive(Main.showInventoryIcon.Value);
 
-                        inventoryText.SetActive(Main.showInventoryText.Value);
-                        inventoryIcon.SetActive(Main.showInventoryIcon.Value);
+                upperLeft.SetActive(Main.showUpperLeft.Value);
+                upperLeftOutline.enabled = Main.showUpperLeftOutline.Value;
 
-                        upperLeft.SetActive(Main.showUpperLeft.Value);
-                        upperLeftOutline.enabled = Main.showUpperLeftOutline.Value;
+                moneyBg.SetActive(Main.showMoneyBg.Value);
+                moneyIcon.SetActive(Main.showMoneyIcon.Value);
 
-                        moneyBg.SetActive(Main.showMoneyBg.Value);
-                        moneyIcon.SetActive(Main.showMoneyIcon.Value);
+                lunarBg.SetActive(Main.showLunarBg.Value);
+                lunarIcon.SetActive(Main.showLunarIcon.Value);
 
-                        lunarBg.SetActive(Main.showLunarBg.Value);
-                        lunarIcon.SetActive(Main.showLunarIcon.Value);
+                bottomCenter.SetActive(Main.showBottomCenter.Value);
 
-                        bottomCenter.SetActive(Main.showBottomCenter.Value);
+                spectatorLabel.SetActive(Main.showSpectatorLabel.Value);
 
-                        spectatorLabel.SetActive(Main.showSpectatorLabel.Value);
+                topCenter.SetActive(Main.showTopCenter.Value);
+                topCenterOutline.enabled = Main.showTopCenterOutline.Value;
 
-                        topCenter.SetActive(Main.showTopCenter.Value);
-                        topCenterOutline.enabled = Main.showTopCenterOutline.Value;
+                bossLabel.SetActive(Main.showBossText.Value);
+                bossSubtitle.SetActive(Main.showBossSubtitle.Value);
 
-                        bossLabel.SetActive(Main.showBossText.Value);
-                        bossSubtitle.SetActive(Main.showBossSubtitle.Value);
-
-                        timer = 0;
-                        */
-                    }
-                }
+                timer = 0;
+                */
             }
         }
     }
