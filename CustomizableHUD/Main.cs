@@ -11,6 +11,8 @@ using RoR2;
 using UnityEngine;
 using UnityEngine.UI;
 using RoR2.UI;
+using JetBrains.Annotations;
+using Rewired.Utils;
 
 namespace CustomizableHUD
 {
@@ -80,7 +82,6 @@ namespace CustomizableHUD
         {
             CHLogger = Logger;
             CHConfig = Config;
-            CharacterBody.onBodyStartGlobal += CharacterBody_onBodyStartGlobal;
 
             showUpperLeft = Config.Bind("Top Left", "Top left", true, "Show top left holder?");
             showUpperLeftOutline = Config.Bind("Top Left", "Outline", true, "Show outline?");
@@ -162,16 +163,26 @@ namespace CustomizableHUD
                     ModSettingsManager.AddOption(new CheckBoxOption((ConfigEntry<bool>)ceb, new CheckBoxConfig()), "CH.TabID." + tabID, "CH: " + Name);
                 }
             }
+            CharacterBody.onBodyStartGlobal += CharacterBody_onBodyStartGlobal;
+            On.RoR2.UI.HUD.Awake += HUD_Awake;
+        }
+
+        public static HUD hud;
+
+        // hud here?
+
+        private void HUD_Awake(On.RoR2.UI.HUD.orig_Awake orig, HUD self)
+        {
+            hud = self;
+            orig(self);
         }
 
         private void CharacterBody_onBodyStartGlobal(CharacterBody body)
         {
-            if (body.isPlayerControlled)
+            foreach (var component in InstanceTracker.GetInstancesList<HUDControllerComponent>())
             {
-                if (body.GetComponent<HUDControllerComponent>() == null)
-                {
-                    body.gameObject.AddComponent<HUDControllerComponent>();
-                }
+                if (body == component.hud.)
+                    // i dont have hud in the component
             }
         }
 
@@ -187,6 +198,7 @@ namespace CustomizableHUD
     public class HUDControllerComponent : MonoBehaviour
     {
         public GameObject owner;
+        // is this gonna be useful at all
 
         private Transform mainContainer;
 
@@ -298,19 +310,24 @@ namespace CustomizableHUD
         private GameObject bossSubtitle;
         private float timer;
         private float interval = 2f;
-        private bool shouldRun;
+
+        private void OnEnable()
+        {
+            InstanceTracker.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            InstanceTracker.Remove(this);
+        }
 
         private void Start()
         {
-            shouldRun = false;
             if (LocalUserManager.GetFirstLocalUser().cameraRigController)
             {
                 var localCameraRig = LocalUserManager.GetFirstLocalUser().cameraRigController;
                 if (localCameraRig.isHudAllowed)
                 {
-                    // how do I actually get the HUD's owner here?
-
-                    shouldRun = true;
                     mainContainer = localCameraRig.hud.mainContainer.transform;
                     buildLabel = mainContainer.GetChild(0).gameObject;
                     scopeContainer = mainContainer.GetChild(2).gameObject;
@@ -436,15 +453,11 @@ namespace CustomizableHUD
             {
                 if (LocalUserManager.GetFirstLocalUser().cameraRigController)
                 {
-                    Debug.Log("getfirstlocaluser().camerarigcontroller not null");
                     var localCameraRig = LocalUserManager.GetFirstLocalUser().cameraRigController;
-                    if (localCameraRig.isHudAllowed && shouldRun)
+                    if (localCameraRig.isHudAllowed)
                     {
-                        Debug.Log("ishudallowed is true, shouldRun is true");
+                        // buildLabel.SetActive(Main.showBuildLabel.Value);
 
-                        buildLabel.SetActive(Main.showBuildLabel.Value);
-
-                        // NRE
                         /*
                         scopeContainer.SetActive(Main.showScope.Value);
 
