@@ -13,6 +13,7 @@ using UnityEngine.UI;
 using RoR2.UI;
 using JetBrains.Annotations;
 using Rewired.Utils;
+using System.Linq.Expressions;
 
 namespace CustomizableHUD
 {
@@ -46,15 +47,22 @@ namespace CustomizableHUD
         public static ConfigEntry<bool> showUpperRight { get; set; }
         public static ConfigEntry<bool> showStupidWormgear { get; set; }
         public static ConfigEntry<bool> showTimerText { get; set; }
+        public static ConfigEntry<bool> showTimerBg { get; set; }
         public static ConfigEntry<bool> showDiffPanel { get; set; }
         public static ConfigEntry<bool> showStage { get; set; }
         public static ConfigEntry<bool> showAmbient { get; set; }
         public static ConfigEntry<bool> showCoolWormgear { get; set; }
         public static ConfigEntry<bool> showScroller { get; set; }
+        public static ConfigEntry<bool> showBackdrop { get; set; }
+        public static ConfigEntry<bool> showViewport { get; set; }
         public static ConfigEntry<bool> showMarker { get; set; }
         public static ConfigEntry<bool> showOutline { get; set; }
         public static ConfigEntry<bool> showArtifact { get; set; }
         public static ConfigEntry<bool> showObjective { get; set; }
+        public static ConfigEntry<bool> showArtifactBg { get; set; }
+        public static ConfigEntry<bool> showObjectiveBg { get; set; }
+        public static ConfigEntry<bool> showEvolutionBg { get; set; }
+        public static ConfigEntry<bool> showEvolutionLabel { get; set; }
         public static ConfigEntry<bool> showBottomRight { get; set; }
         public static ConfigEntry<bool> showAltEquipBg { get; set; }
         public static ConfigEntry<bool> showAltEquipText { get; set; }
@@ -77,6 +85,10 @@ namespace CustomizableHUD
         public static ConfigEntry<bool> showTopCenterOutline { get; set; }
         public static ConfigEntry<bool> showBossText { get; set; }
         public static ConfigEntry<bool> showBossSubtitle { get; set; }
+        public static ConfigEntry<bool> showScoreboardText { get; set; }
+        public static ConfigEntry<bool> showScoreboardOutlineLight { get; set; }
+        public static ConfigEntry<bool> showScoreboardOutlinesDark { get; set; }
+        public static ConfigEntry<bool> showScoreboardBackground { get; set; }
 
         public void Awake()
         {
@@ -101,15 +113,22 @@ namespace CustomizableHUD
             showUpperRight = Config.Bind("Top Right", "Top right", true, "Show top right holder?");
             showStupidWormgear = Config.Bind("Top Right", "Stupid wormgear", true, "Show rightmost wormgear?");
             showTimerText = Config.Bind("Top Right", "Timer text", true, "Show timer value?");
+            showTimerBg = Config.Bind("Top Right", "Timer bg", true, "Show timer background?");
             showDiffPanel = Config.Bind("Top Right", "Difficulty panel", true, "Show difficulty icon?");
             showAmbient = Config.Bind("Top Right", "Stage ambient panel", true, "Show ambient level?");
             showStage = Config.Bind("Top Right", "Stage", true, "Show stage number?");
             showCoolWormgear = Config.Bind("Top Right", "Cool wormgear", true, "Show the based wormgear?");
-            showScroller = Config.Bind("Top Right", "Scroller", true, "Show scrolling difficulty bar?");
+            showScroller = Config.Bind("Top Right", "Scroller", true, "Show difficulty bar background 1?");
+            showBackdrop = Config.Bind("Top Right", "Backdrop", true, "Show difficulty bar background 2?");
+            showViewport = Config.Bind("Top Right", "Viewport", true, "Show difficulty bars?");
             showMarker = Config.Bind("Top Right", "Marker", true, "Show current difficulty marker?");
             showOutline = Config.Bind("Top Right", "Outline", true, "Show difficulty holder outline?");
             showArtifact = Config.Bind("Top Right", "Artifact", true, "Show artifact holder?");
             showObjective = Config.Bind("Top Right", "Objective", true, "Show objective holder?");
+            showArtifactBg = Config.Bind("Top Right", "Artifact bg", true, "Show artifact background?");
+            showObjectiveBg = Config.Bind("Top Right", "Objective bg", true, "Show objective background?");
+            showEvolutionBg = Config.Bind("Top Right", "Evolution bg", true, "Show artifact of evolution/void fields backgrounds?");
+            showEvolutionLabel = Config.Bind("Top Right", "Evolution label", true, "Show artifact of evolution/void fields text?");
 
             showHitmarker = Config.Bind("Center", "Hitmarker", true, "Show hitmarker?");
             showCrosshair = Config.Bind("Center", "Crosshair", true, "Show crosshair holder?");
@@ -135,6 +154,11 @@ namespace CustomizableHUD
             showSprintIcon = Config.Bind("Bottom Right", "Sprint icon", true, "Show sprint icon?");
             showInventoryText = Config.Bind("Bottom Right", "Inventory text", true, "Show inventory keybind text?");
             showInventoryIcon = Config.Bind("Bottom Right", "Inventory icon", true, "Show inventory icon?");
+
+            showScoreboardText = Config.Bind("Center", "Scoreboard text", true, "Show scoreboard text?");
+            showScoreboardBackground = Config.Bind("Center", "Scoreboard bg", true, "Show scoreboard background?");
+            showScoreboardOutlineLight = Config.Bind("Center", "Scoreboard outline", true, "Show outer, light scoreboard outline?");
+            showScoreboardOutlinesDark = Config.Bind("Center", "Scoreboard outline 2", true, "Show inner, dark scoreboard outlines?");
 
             var tabID = 0;
             foreach (ConfigEntryBase ceb in Config.GetConfigEntries())
@@ -173,7 +197,7 @@ namespace CustomizableHUD
         private void HUD_Awake(On.RoR2.UI.HUD.orig_Awake orig, HUD self)
         {
             orig(self);
-            self.targetBodyObject.AddComponent<HUDControllerComponent>();
+            self.gameObject.AddComponent<HUDControllerComponent>();
             hud = self;
         }
 
@@ -182,6 +206,14 @@ namespace CustomizableHUD
         }
 
         private void SpaceOfVariationsImagoAlbum()
+        {
+        }
+
+        private void MfwIAdvertiseMusicInCode()
+        {
+        }
+
+        private void ItsAlsoFunnierToDoThisCauseDecompilersSeeItAsOpposedToComments()
         {
         }
     }
@@ -205,13 +237,14 @@ namespace CustomizableHUD
 
         private GameObject mainUIArea;
 
-        private GameObject hitmarker;
+        private Image hitmarker;
         private GameObject crosshair;
 
         private GameObject mainCanvas2;
         private GameObject bottomLeft;
 
         private GameObject chatBox;
+        private GameObject levelDisplayCluster;
         private GameObject hpLevelVal;
         private GameObject hpLevelBar;
 
@@ -220,6 +253,7 @@ namespace CustomizableHUD
 
         private GameObject stupidWormgear;
         private GameObject timerText;
+        private Image timerBg;
         private GameObject diffPanel;
 
         private GameObject stageAmbientPanel;
@@ -230,7 +264,9 @@ namespace CustomizableHUD
         private GameObject diffBar;
 
         private GameObject coolWormgear;
-        private GameObject scroller;
+        private Image scroller;
+        private GameObject backdrop;
+        private GameObject viewport;
         private GameObject marker;
         private GameObject outline;
 
@@ -238,6 +274,10 @@ namespace CustomizableHUD
 
         private GameObject artifact;
         private GameObject objective;
+        private Image artifactBg;
+        private Image objectiveBg;
+        private Image evolutionBg;
+        private GameObject evolutionLabel;
 
         private GameObject bottomRight;
         private GameObject altEquipRoot;
@@ -299,8 +339,20 @@ namespace CustomizableHUD
         private GameObject bossRoot;
         private GameObject bossLabel;
         private GameObject bossSubtitle;
+
+        private GameObject scoreboard;
+        private GameObject scoreboardContainer;
+        private GameObject scoreboardPlayerText;
+        private GameObject scoreboardItemText;
+        private GameObject scoreboardEquipmentText;
+        private Image scoreboardBackground;
+        private Image scoreboardOutlineLight;
+        private Image scoreboardOutlineDarkPlayer;
+        private Image scoreboardOutlineDarkItem;
+        private Image scoreboardOutlineDarkEquipment;
+
         private float timer;
-        private float interval = 2f;
+        private float interval = 0.1f;
 
         private void OnEnable()
         {
@@ -329,21 +381,23 @@ namespace CustomizableHUD
 
             mainUIArea = mainContainer.GetChild(7).gameObject;
 
-            hitmarker = mainUIArea.transform.GetChild(0).gameObject;
+            hitmarker = mainUIArea.transform.GetChild(0).GetComponent<Image>();
             crosshair = mainUIArea.transform.GetChild(1).gameObject;
 
             mainCanvas2 = mainUIArea.transform.GetChild(2).gameObject;
             bottomLeft = mainCanvas2.transform.GetChild(0).gameObject;
 
             chatBox = bottomLeft.transform.GetChild(0).gameObject;
-            hpLevelVal = bottomLeft.transform.GetChild(1).GetChild(0).gameObject;
-            hpLevelBar = bottomLeft.transform.GetChild(1).GetChild(1).gameObject;
+            levelDisplayCluster = bottomLeft.transform.GetChild(1).GetChild(0).gameObject;
+            hpLevelVal = levelDisplayCluster.transform.GetChild(1).gameObject;
+            hpLevelBar = levelDisplayCluster.transform.GetChild(2).gameObject;
 
             upperRight = mainCanvas2.transform.GetChild(1).GetChild(0).gameObject;
             timerPanel = upperRight.transform.GetChild(0).gameObject;
 
             stupidWormgear = timerPanel.transform.GetChild(0).gameObject;
             timerText = timerPanel.transform.GetChild(1).gameObject;
+            timerBg = timerPanel.GetComponent<Image>();
             diffPanel = upperRight.transform.GetChild(1).gameObject;
 
             stageAmbientPanel = upperRight.transform.GetChild(2).gameObject;
@@ -354,7 +408,9 @@ namespace CustomizableHUD
             diffBar = upperRight.transform.GetChild(3).gameObject;
 
             coolWormgear = diffBar.transform.GetChild(0).gameObject;
-            scroller = diffBar.transform.GetChild(1).gameObject;
+            scroller = diffBar.transform.GetChild(1).GetComponent<Image>();
+            backdrop = scroller.transform.GetChild(0).gameObject;
+            viewport = scroller.transform.GetChild(1).gameObject;
             marker = diffBar.transform.GetChild(3).gameObject;
 
             outline = upperRight.transform.GetChild(4).gameObject;
@@ -363,6 +419,8 @@ namespace CustomizableHUD
 
             artifact = objectiveArtifact.transform.GetChild(0).gameObject;
             objective = objectiveArtifact.transform.GetChild(1).gameObject;
+            artifactBg = objectiveArtifact.transform.GetChild(0).GetComponent<Image>();
+            objectiveBg = objectiveArtifact.transform.GetChild(1).GetComponent<Image>();
 
             bottomRight = mainCanvas2.transform.GetChild(2).GetChild(0).gameObject;
             altEquipRoot = bottomRight.transform.GetChild(1).GetChild(0).gameObject;
@@ -373,7 +431,7 @@ namespace CustomizableHUD
             equipRoot = bottomRight.transform.GetChild(2).GetChild(1).gameObject;
 
             equipBg = equipRoot.transform.GetChild(1).gameObject;
-            equipText = equipRoot.transform.GetChild(4).gameObject;
+            equipText = equipRoot.transform.GetChild(6).gameObject;
 
             primaryRoot = bottomRight.transform.GetChild(3).gameObject;
 
@@ -402,10 +460,7 @@ namespace CustomizableHUD
             inventoryIcon = inventoryCluster.transform.GetChild(2).gameObject;
 
             upperLeft = mainCanvas2.transform.GetChild(3).gameObject;
-
-            // special case
             upperLeftOutline = upperLeft.GetComponent<Image>();
-            //
 
             moneyRoot = upperLeft.transform.GetChild(0).gameObject;
 
@@ -423,13 +478,26 @@ namespace CustomizableHUD
 
             topCenter = mainCanvas2.transform.GetChild(5).gameObject;
 
-            // special case
             topCenterOutline = topCenter.transform.GetChild(0).GetChild(0).GetComponent<Image>();
-            //
 
             bossRoot = topCenter.transform.GetChild(1).GetChild(0).gameObject;
             bossLabel = bossRoot.transform.GetChild(1).gameObject;
             bossSubtitle = bossRoot.transform.GetChild(2).gameObject;
+
+            scoreboard = mainCanvas2.transform.GetChild(8).gameObject;
+            scoreboardContainer = scoreboard.transform.GetChild(0).gameObject;
+            scoreboardPlayerText = scoreboardContainer.transform.GetChild(0).gameObject;
+            scoreboardItemText = scoreboardContainer.transform.GetChild(1).gameObject;
+            scoreboardEquipmentText = scoreboardContainer.transform.GetChild(2).gameObject;
+            // works
+            /*
+            scoreboardOutlineLight = scoreboardContainer.transform.GetChild(3).GetComponent<Image>();
+            scoreboardBackground = scoreboardOutlineLight.transform.GetChild(0).GetChild(0).GetComponent<Image>();
+            scoreboardOutlineDarkItem = scoreboardBackground.transform.GetChild(5).GetComponent<Image>();
+            scoreboardOutlineDarkEquipment = scoreboardBackground.transform.GetChild(6).GetComponent<Image>();
+            scoreboardOutlineDarkPlayer = scoreboardBackground.transform.GetChild(1).GetComponent<Image>();
+            */
+            // NRE's I cannot seem to fix.
         }
 
         private void FixedUpdate()
@@ -437,6 +505,29 @@ namespace CustomizableHUD
             timer += Time.fixedDeltaTime;
             if (timer > interval)
             {
+                try
+                {
+                    if (objectiveArtifact.transform.GetChild(2).name == "EnemyInfoPanel(Clone)")
+                    {
+                        evolutionBg = objectiveArtifact.transform.GetChild(2).GetComponent<Image>();
+                        // enemyinfopanel result
+                        var innerFrame = evolutionBg.transform.GetChild(0).GetComponent<Image>();
+                        var monsterBodiesLabel = innerFrame.transform.GetChild(0).GetChild(0).gameObject;
+                        var monsterBodiesBg = innerFrame.transform.GetChild(0).GetChild(1).GetComponent<Image>();
+
+                        evolutionLabel = innerFrame.transform.GetChild(1).GetChild(0).gameObject;
+                        var inventoryDisplay = innerFrame.transform.GetChild(1).GetChild(1).GetComponent<Image>();
+
+                        monsterBodiesBg.enabled = Main.showEvolutionBg.Value;
+                        monsterBodiesLabel.SetActive(Main.showEvolutionLabel.Value);
+                        inventoryDisplay.enabled = Main.showEvolutionBg.Value;
+                        innerFrame.enabled = Main.showEvolutionBg.Value;
+                        evolutionBg.enabled = Main.showEvolutionBg.Value;
+                        evolutionLabel.SetActive(Main.showEvolutionLabel.Value);
+                    }
+                }
+                catch { }
+
                 buildLabel.SetActive(Main.showBuildLabel.Value);
 
                 scopeContainer.SetActive(Main.showScope.Value);
@@ -446,11 +537,11 @@ namespace CustomizableHUD
                 mapName.SetActive(Main.showMapName.Value);
                 mapSubtitle.SetActive(Main.showMapSubtitle.Value);
 
-                hitmarker.SetActive(Main.showHitmarker.Value);
+                hitmarker.enabled = Main.showHitmarker.Value;
                 crosshair.SetActive(Main.showCrosshair.Value);
 
                 bottomLeft.SetActive(Main.showBottomLeft.Value);
-                /*
+
                 chatBox.SetActive(Main.showChatBox.Value);
                 hpLevelVal.SetActive(Main.showHpLevelVal.Value);
                 hpLevelBar.SetActive(Main.showHpLevelBar.Value);
@@ -459,6 +550,7 @@ namespace CustomizableHUD
 
                 stupidWormgear.SetActive(Main.showStupidWormgear.Value);
                 timerText.SetActive(Main.showTimerText.Value);
+                timerBg.enabled = Main.showTimerBg.Value;
 
                 stage.SetActive(Main.showStage.Value);
                 ambient.SetActive(Main.showAmbient.Value);
@@ -466,13 +558,17 @@ namespace CustomizableHUD
                 diffBar.SetActive(Main.showDiffPanel.Value);
 
                 coolWormgear.SetActive(Main.showCoolWormgear.Value);
-                scroller.SetActive(Main.showScroller.Value);
+                scroller.enabled = Main.showScroller.Value;
+                backdrop.SetActive(Main.showBackdrop.Value);
+                viewport.SetActive(Main.showViewport.Value);
                 marker.SetActive(Main.showMarker.Value);
 
                 outline.SetActive(Main.showOutline.Value);
 
                 artifact.SetActive(Main.showArtifact.Value);
                 objective.SetActive(Main.showObjective.Value);
+                artifactBg.enabled = Main.showArtifactBg.Value;
+                objectiveBg.enabled = Main.showObjectiveBg.Value;
 
                 bottomRight.SetActive(Main.showBottomRight.Value);
 
@@ -480,7 +576,7 @@ namespace CustomizableHUD
                 altEquipText.SetActive(Main.showAltEquipText.Value);
 
                 equipBg.SetActive(Main.showEquipBg.Value);
-                equipText.SetActive(Main.showAltEquipText.Value);
+                equipText.SetActive(Main.showEquipText.Value);
 
                 primaryText.SetActive(Main.showSkillText.Value);
 
@@ -515,8 +611,17 @@ namespace CustomizableHUD
                 bossLabel.SetActive(Main.showBossText.Value);
                 bossSubtitle.SetActive(Main.showBossSubtitle.Value);
 
-                timer = 0;
+                /*
+                scoreboardEquipmentText.SetActive(Main.showScoreboardText.Value);
+                scoreboardItemText.SetActive(Main.showScoreboardText.Value);
+                scoreboardPlayerText.SetActive(Main.showScoreboardText.Value);
+                scoreboardBackground.enabled = Main.showScoreboardBackground.Value;
+                scoreboardOutlineLight.enabled = Main.showScoreboardOutlineLight.Value;
+                scoreboardOutlineDarkEquipment.enabled = Main.showScoreboardOutlinesDark.Value;
+                scoreboardOutlineDarkItem.enabled = Main.showScoreboardOutlinesDark.Value;
+                scoreboardOutlineDarkPlayer.enabled = Main.showScoreboardOutlinesDark.Value;
                 */
+                timer = 0;
             }
         }
     }
