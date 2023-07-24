@@ -1,16 +1,13 @@
-#nullable enable
-
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using RiskOfOptions.OptionConfigs;
 using RiskOfOptions.Options;
 using RiskOfOptions;
-using RoR2;
 using UnityEngine;
-using UnityEngine.UI;
 using RoR2.UI;
 using System.Reflection;
+using RoR2;
 
 namespace CustomizableHUD
 {
@@ -21,12 +18,11 @@ namespace CustomizableHUD
 
         public const string PluginAuthor = "HIFU";
         public const string PluginName = "CustomizableHUD";
-        public const string PluginVersion = "1.1.0";
+        public const string PluginVersion = "1.2.0";
 
         private ConfigFile CHConfig;
         public static ManualLogSource CHLogger;
 
-        private string version = PluginVersion;
         public AssetBundle customizablehud;
 
         public static ConfigEntry<bool> showBuildLabel { get; set; }
@@ -100,6 +96,8 @@ namespace CustomizableHUD
         public static ConfigEntry<bool> showScoreboardOutlineLight { get; set; }
         public static ConfigEntry<bool> showScoreboardOutlinesDark { get; set; }
         public static ConfigEntry<bool> showScoreboardBackground { get; set; }
+        public static ConfigEntry<bool> showBetteruiStupidSTUPIDBuffer { get; set; }
+        public static ConfigEntry<bool> showBetteruiBackground { get; set; }
 
         // TRANSFORMS
 
@@ -161,6 +159,8 @@ namespace CustomizableHUD
         public static ConfigEntry<float> changeBottomRightRotY { get; set; }
         public static ConfigEntry<float> changeBottomRightRotZ { get; set; }
         public static ConfigEntry<float> entireHUDalpha { get; set; }
+        public static ConfigEntry<Color> entireHUDtint { get; set; }
+        public static ConfigEntry<Color> fontTint { get; set; }
 
         public void Awake()
         {
@@ -203,6 +203,8 @@ namespace CustomizableHUD
             showObjectiveBg = Config.Bind("Top Right Toggles", "Objective bg", true, "Show objective background? Vanilla is true");
             showEvolutionBg = Config.Bind("Top Right Toggles", "Evolution bg", true, "Show artifact of evolution/void fields backgrounds? Vanilla is true");
             showEvolutionLabel = Config.Bind("Top Right Toggles", "Evolution label", true, "Show artifact of evolution/void fields text? Vanilla is true");
+            showBetteruiStupidSTUPIDBuffer = Config.Bind("Top Right Toggles", "BetterUI Stupid STUPID Buffer", true, "Show that stupid really STUPID (even called stupid by the dev) buffer?");
+            showBetteruiBackground = Config.Bind("Top Right Toggles", "BetterUI Background", true, "Show background?");
 
             showHitmarker = Config.Bind("Center Toggles", "Hitmarker", true, "Show hitmarker? Vanilla is true");
             showCrosshair = Config.Bind("Center Toggles", "Crosshair", true, "Show crosshair holder? Vanilla is true");
@@ -351,8 +353,12 @@ namespace CustomizableHUD
             ModSettingsManager.AddOption(new StepSliderOption(changeBottomRightRotY, new StepSliderConfig() { min = -360f, max = 360f, increment = 1 }), "CH.TabID." + 8, "CH: Bottom Rotations");
             ModSettingsManager.AddOption(new StepSliderOption(changeBottomRightRotZ, new StepSliderConfig() { min = -360f, max = 360f, increment = 1 }), "CH.TabID." + 8, "CH: Bottom Rotations");
 
-            entireHUDalpha = Config.Bind("Entire HUD", "Transparency", 1f, "Decimal. Vanilla is 1");
-            ModSettingsManager.AddOption(new StepSliderOption(entireHUDalpha, new StepSliderConfig() { min = 0f, max = 1f, increment = 0.01f }), "CH.TabID." + 9, "CH: Entire HUD");
+            entireHUDalpha = Config.Bind("Misc", "Transparency", 1f, "Decimal. Vanilla is 1");
+            entireHUDtint = Config.Bind("Misc", "Entire HUD Tint", new Color(1f, 1f, 1f, 1f), "Wack on multiplayer - everyone must have the same colors. The tint of the HUD. Vanilla is 1, 1, 1, 1 (255, 255, 255, 255). These numbers are RGB values divided by 255.");
+            fontTint = Config.Bind("Misc", "Font Tint", new Color(1f, 1f, 1f, 1f), "Wack on multiplayer - everyone must have the same colors. The tint of the font. Vanilla is 1, 1, 1, 1 (255, 255, 255, 255). These numbers are RGB values divided by 255.");
+            ModSettingsManager.AddOption(new StepSliderOption(entireHUDalpha, new StepSliderConfig() { min = 0f, max = 1f, increment = 0.01f }), "CH.TabID." + 9, "CH: Misc");
+            ModSettingsManager.AddOption(new ColorOption(entireHUDtint), "CH.TabID." + 9, "CH: Misc");
+            ModSettingsManager.AddOption(new ColorOption(fontTint), "CH.TabID." + 9, "CH: Misc");
 
             var tabID = 0;
             foreach (ConfigEntryBase ceb in Config.GetConfigEntries())
@@ -431,615 +437,42 @@ namespace CustomizableHUD
                 ModSettingsManager.SetModIcon(customizablehud.LoadAsset<Sprite>("Rotate.png"), "CH.TabID." + 7, "CH: Center Rotations");
                 ModSettingsManager.SetModIcon(customizablehud.LoadAsset<Sprite>("Rotate.png"), "CH.TabID." + 8, "CH: Bottom Rotations");
 
-                ModSettingsManager.SetModIcon(customizablehud.LoadAsset<Sprite>("CustomizableHUD.png"), "CH.TabID." + 9, "CH: Entire HUD");
+                ModSettingsManager.SetModIcon(customizablehud.LoadAsset<Sprite>("CustomizableHUD.png"), "CH.TabID." + 9, "CH: Misc");
             }
             On.RoR2.UI.HUD.Awake += HUD_Awake;
+            On.RoR2.UI.HUD.Update += HUD_Update;
         }
-
-        public static HUD hud;
-
-        // hud here?
 
         private void HUD_Awake(On.RoR2.UI.HUD.orig_Awake orig, HUD self)
         {
             orig(self);
-            self.gameObject.AddComponent<HUDControllerComponent>();
-            hud = self;
-        }
-    }
-
-    public class HUDControllerComponent : MonoBehaviour
-    {
-        public HUD hud;
-
-        private Transform mainContainer;
-
-        private GameObject buildLabel;
-        private GameObject scopeContainer;
-
-        private GameObject notifArea;
-
-        private GameObject mapNameCluster;
-
-        private GameObject mapName;
-        private GameObject mapSubtitle;
-
-        private GameObject mainUIArea;
-
-        private GameObject springCanvas;
-
-        private GameObject leftCenter;
-        private GameObject rightCenter;
-        private GameObject bottomLeft;
-        private GameObject upperRight;
-        private GameObject upperRightReal;
-        private GameObject bottomRight;
-
-        private GameObject bottomCenter;
-        private GameObject topCenter;
-
-        private GameObject upperLeft;
-
-        private Image hitmarker;
-        private GameObject crosshair;
-
-        private GameObject chatBox;
-        private GameObject levelDisplayCluster;
-        private GameObject hpLevelVal;
-        private GameObject hpLevelBar;
-
-        private GameObject timerPanel;
-
-        private GameObject stupidWormgear;
-        private GameObject timerText;
-        private Image timerBg;
-        private GameObject diffPanel;
-
-        private GameObject stageAmbientPanel;
-
-        private GameObject stage;
-        private GameObject ambient;
-
-        private GameObject diffBar;
-
-        private GameObject coolWormgear;
-        private Image scroller;
-        private GameObject backdrop;
-        private GameObject viewport;
-        private GameObject marker;
-        private GameObject outline;
-
-        private GameObject objectiveArtifact;
-
-        private GameObject artifact;
-        private GameObject objective;
-        private Image artifactBg;
-        private Image objectiveBg;
-        private Image evolutionBg;
-        private GameObject evolutionLabel;
-
-        private GameObject altEquipRoot;
-
-        private GameObject altEquipBg;
-        private GameObject altEquipText;
-
-        private GameObject equipRoot;
-
-        private GameObject equipBg;
-        private GameObject equipText;
-
-        private GameObject primaryRoot;
-
-        private GameObject primaryText;
-
-        private GameObject secondaryRoot;
-
-        private GameObject secondaryText;
-
-        private GameObject utilityRoot;
-
-        private GameObject utilityText;
-
-        private GameObject specialRoot;
-
-        private GameObject specialText;
-
-        private GameObject sprintCluster;
-
-        private GameObject sprintText;
-        private GameObject sprintIcon;
-
-        private GameObject inventoryCluster;
-
-        private GameObject inventoryText;
-        private GameObject inventoryIcon;
-
-        private Image upperLeftOutline;
-
-        private GameObject moneyRoot;
-
-        private GameObject moneyBg;
-        private GameObject moneyIcon;
-
-        private GameObject lunarRoot;
-
-        private GameObject lunarBg;
-        private GameObject lunarIcon;
-
-        private GameObject spectatorLabel;
-
-        private Image topCenterOutline;
-
-        private GameObject bossRoot;
-        private GameObject bossLabel;
-        private GameObject bossSubtitle;
-
-        private GameObject scoreboard;
-        private GameObject scoreboardContainer;
-        private GameObject scoreboardPlayerText;
-        private GameObject scoreboardItemText;
-        private GameObject scoreboardEquipmentText;
-        private Image? scoreboardBackground;
-        private Image? scoreboardOutlineLight;
-        private Image? scoreboardOutlineDarkPlayer;
-        private Image? scoreboardOutlineDarkItem;
-        private Image? scoreboardOutlineDarkEquipment;
-
-        private GameObject crosshairExtras;
-        private GameObject viendCorruption;
-        private GameObject viendFillRoot;
-        private GameObject viendFill;
-        private Image viendCorruptionTextBackdrop;
-        private GameObject viendCorruptionText;
-        private GameObject viendCorruptionFillBackdrop;
-        private Image viendCorruptionFill;
-
-        private GameObject? simulacrumNextWaveUI;
-        private GameObject? simulacrumCurrentWaveUI;
-        private GameObject? simulacrumWaveIcon;
-        private GameObject? simulacrumVerticalLayout;
-        private GameObject? simulacrumWaveTitle;
-        private GameObject? simulacrumWaveOptionalWaveInfo;
-        private GameObject? simulacrumBackdrop;
-        private GameObject? simulacrumTitle;
-        private GameObject? simulacrumOutline;
-
-        private Vector3 topLeftV = new(0f, 0f, 0f);
-        private Vector3 topCenterV = new(0f, 0f, 0f);
-        private Vector3 topRightV = new(0f, 0f, 0f);
-
-        private Vector3 leftCenterV = new(0f, 0f, 0f);
-        private Vector3 rightCenterV = new(0f, 0f, 0f);
-        private Vector3 bottomLeftV = new(0f, 0f, 0f);
-
-        private Vector3 bottomCenterV = new(0f, 0f, 0f);
-        private Vector3 bottomRightV = new(0f, 0f, 0f);
-
-        private Vector3 topLeftRotV = new(0f, 0f, 0f);
-        private Vector3 topCenterRotV = new(0f, 0f, 0f);
-        private Vector3 topRightRotV = new(0f, 0f, 0f);
-
-        private Vector3 leftCenterRotV = new(0f, 0f, 0f);
-        private Vector3 rightCenterRotV = new(0f, 0f, 0f);
-
-        private Vector3 bottomLeftRotV = new(0f, 0f, 0f);
-        private Vector3 bottomCenterRotV = new(0f, 0f, 0f);
-        private Vector3 bottomRightRotV = new(0f, 0f, 0f);
-
-        private float timer;
-        private float interval = 0.1f;
-
-        private CanvasGroup canvasGroup;
-
-        private void OnEnable()
-        {
-            InstanceTracker.Add(this);
+            // Main.CHLogger.LogError("awake has run: " + hasRun);
+            hasRun = false;
         }
 
-        private void OnDisable()
+        public static bool hasRun = false;
+        public static HUD hud;
+
+        private void HUD_Update(On.RoR2.UI.HUD.orig_Update orig, HUD self)
         {
-            InstanceTracker.Remove(this);
-        }
-
-        private void Start()
-        {
-            hud = Main.hud;
-            mainContainer = hud.mainContainer.transform;
-            canvasGroup = hud.gameObject.AddComponent<CanvasGroup>();
-
-            buildLabel = mainContainer.GetChild(0).gameObject;
-            scopeContainer = mainContainer.GetChild(2).gameObject;
-
-            notifArea = mainContainer.GetChild(4).gameObject;
-
-            mapNameCluster = mainContainer.GetChild(3).gameObject;
-
-            mapName = mapNameCluster.transform.GetChild(0).gameObject;
-            mapSubtitle = mapNameCluster.transform.GetChild(1).gameObject;
-
-            mainUIArea = mainContainer.GetChild(7).gameObject;
-            springCanvas = mainUIArea.transform.GetChild(2).gameObject;
-            bottomLeft = springCanvas.transform.GetChild(0).gameObject;
-            leftCenter = springCanvas.transform.GetChild(6).gameObject;
-            rightCenter = springCanvas.transform.GetChild(7).gameObject;
-            upperRightReal = springCanvas.transform.GetChild(1).gameObject;
-            upperRight = upperRightReal.transform.GetChild(0).gameObject;
-            bottomRight = springCanvas.transform.GetChild(2).GetChild(0).gameObject;
-            upperLeft = springCanvas.transform.GetChild(3).gameObject;
-            bottomCenter = springCanvas.transform.GetChild(4).gameObject;
-            topCenter = springCanvas.transform.GetChild(5).gameObject;
-
-            hitmarker = mainUIArea.transform.GetChild(0).GetComponent<Image>();
-            crosshair = mainUIArea.transform.GetChild(1).gameObject;
-
-            crosshairExtras = crosshair.transform.GetChild(0).gameObject;
-
-            /*
-            viendCorruption = crosshairExtras.transform.GetChild(0).gameObject;
-            viendFillRoot = viendCorruption.transform.GetChild(0).gameObject;
-            viendCorruptionTextBackdrop = viendFillRoot.transform.GetChild(0).GetComponent<Image>();
-            viendCorruptionText = viendCorruptionFillBackdrop.transform.GetChild(0).gameObject;
-            viendFill = viendFillRoot.transform.GetChild(1).gameObject;
-            viendCorruptionFillBackdrop = viendFill.transform.GetChild(0).gameObject;
-            viendCorruptionFill = viendFill.transform.GetChild(1).GetComponent<Image>();
-            */
-
-            chatBox = bottomLeft.transform.GetChild(0).gameObject;
-            levelDisplayCluster = bottomLeft.transform.GetChild(1).GetChild(0).gameObject;
-            hpLevelVal = levelDisplayCluster.transform.GetChild(1).gameObject;
-            hpLevelBar = levelDisplayCluster.transform.GetChild(2).gameObject;
-
-            timerPanel = upperRight.transform.GetChild(0).gameObject;
-
-            stupidWormgear = timerPanel.transform.GetChild(0).gameObject;
-            timerText = timerPanel.transform.GetChild(1).gameObject;
-            timerBg = timerPanel.GetComponent<Image>();
-            diffPanel = upperRight.transform.GetChild(1).gameObject;
-
-            stageAmbientPanel = upperRight.transform.GetChild(2).gameObject;
-
-            stage = stageAmbientPanel.transform.GetChild(0).gameObject;
-            ambient = stageAmbientPanel.transform.GetChild(1).gameObject;
-
-            diffBar = upperRight.transform.GetChild(3).gameObject;
-
-            coolWormgear = diffBar.transform.GetChild(0).gameObject;
-            scroller = diffBar.transform.GetChild(1).GetComponent<Image>();
-            backdrop = scroller.transform.GetChild(0).gameObject;
-            viewport = scroller.transform.GetChild(1).gameObject;
-            marker = diffBar.transform.GetChild(3).gameObject;
-
-            outline = upperRight.transform.GetChild(4).gameObject;
-
-            objectiveArtifact = upperRight.transform.GetChild(5).gameObject;
-
-            artifact = objectiveArtifact.transform.GetChild(0).gameObject;
-            objective = objectiveArtifact.transform.GetChild(1).gameObject;
-            artifactBg = objectiveArtifact.transform.GetChild(0).GetComponent<Image>();
-            objectiveBg = objectiveArtifact.transform.GetChild(1).GetComponent<Image>();
-
-            altEquipRoot = bottomRight.transform.GetChild(1).GetChild(0).gameObject;
-
-            altEquipBg = altEquipRoot.transform.GetChild(1).gameObject;
-            altEquipText = altEquipRoot.transform.GetChild(4).gameObject;
-
-            equipRoot = bottomRight.transform.GetChild(2).GetChild(1).gameObject;
-
-            equipBg = equipRoot.transform.GetChild(1).gameObject;
-            equipText = equipRoot.transform.GetChild(6).gameObject;
-
-            primaryRoot = bottomRight.transform.GetChild(3).gameObject;
-
-            primaryText = primaryRoot.transform.GetChild(5).gameObject;
-
-            secondaryRoot = bottomRight.transform.GetChild(4).gameObject;
-
-            secondaryText = secondaryRoot.transform.GetChild(5).gameObject;
-
-            utilityRoot = bottomRight.transform.GetChild(5).gameObject;
-
-            utilityText = utilityRoot.transform.GetChild(5).gameObject;
-
-            specialRoot = bottomRight.transform.GetChild(6).gameObject;
-
-            specialText = specialRoot.transform.GetChild(5).gameObject;
-
-            sprintCluster = bottomRight.transform.GetChild(7).gameObject;
-
-            sprintText = sprintCluster.transform.GetChild(1).gameObject;
-            sprintIcon = sprintCluster.transform.GetChild(3).gameObject;
-
-            inventoryCluster = bottomRight.transform.GetChild(8).gameObject;
-
-            inventoryText = inventoryCluster.transform.GetChild(0).gameObject;
-            inventoryIcon = inventoryCluster.transform.GetChild(2).gameObject;
-
-            upperLeftOutline = upperLeft.GetComponent<Image>();
-
-            moneyRoot = upperLeft.transform.GetChild(0).gameObject;
-
-            moneyBg = moneyRoot.transform.GetChild(0).gameObject;
-            moneyIcon = moneyRoot.transform.GetChild(4).gameObject;
-
-            lunarRoot = upperLeft.transform.GetChild(2).gameObject;
-
-            lunarBg = lunarRoot.transform.GetChild(0).gameObject;
-            lunarIcon = lunarRoot.transform.GetChild(4).gameObject;
-
-            spectatorLabel = bottomCenter.transform.GetChild(0).gameObject;
-
-            topCenterOutline = topCenter.transform.GetChild(0).GetChild(0).GetComponent<Image>();
-
-            bossRoot = topCenter.transform.GetChild(1).GetChild(0).gameObject;
-            bossLabel = bossRoot.transform.GetChild(1).gameObject;
-            bossSubtitle = bossRoot.transform.GetChild(2).gameObject;
-
-            scoreboard = springCanvas.transform.GetChild(8).gameObject;
-            scoreboardContainer = scoreboard.transform.GetChild(0).gameObject;
-            scoreboardPlayerText = scoreboardContainer.transform.GetChild(0).gameObject;
-            scoreboardItemText = scoreboardContainer.transform.GetChild(1).gameObject;
-            scoreboardEquipmentText = scoreboardContainer.transform.GetChild(2).gameObject;
-
-            /* NRE FIX LATER SOMEHOW
-                scoreboardOutlineLight = scoreboardContainer.transform.GetChild(3).GetComponent<Image>();
-                scoreboardBackground = scoreboardOutlineLight.transform.GetChild(0).GetChild(0).GetComponent<Image>();
-                scoreboardOutlineDarkItem = scoreboardBackground.transform.GetChild(5).GetComponent<Image>();
-                scoreboardOutlineDarkEquipment = scoreboardBackground.transform.GetChild(6).GetComponent<Image>();
-                scoreboardOutlineDarkPlayer = scoreboardBackground.transform.GetChild(1).GetComponent<Image>();
-
-                simulacrumNextWaveUI = crosshairExtras.transform.GetChild(1).gameObject;
-                simulacrumCurrentWaveUI = crosshairExtras.transform.GetChild(2).gameObject;
-                simulacrumWaveIcon = simulacrumCurrentWaveUI.transform.GetChild(0).GetChild(0).gameObject;
-                simulacrumVerticalLayout = simulacrumCurrentWaveUI.transform.GetChild(0).GetChild(1).gameObject;
-                simulacrumWaveTitle = simulacrumVerticalLayout.transform.GetChild(0).gameObject;
-                simulacrumWaveOptionalWaveInfo = simulacrumVerticalLayout.transform.GetChild(1).gameObject;
-                simulacrumBackdrop = simulacrumNextWaveUI.transform.GetChild(0).GetChild(0).GetChild(0).gameObject;
-                simulacrumTitle = simulacrumNextWaveUI.transform.GetChild(0).GetChild(0).GetChild(2).gameObject;
-                simulacrumOutline = simulacrumCurrentWaveUI.transform.GetChild(0).GetChild(2).gameObject;
-            */
-
-            topLeftV.z = 12.6537f;
-            topCenterV.z = 12.6537f;
-            topRightV.z = 12.6537f;
-
-            leftCenterV.z = 12.6537f;
-            rightCenterV.z = 12.6537f;
-
-            bottomLeftV.z = 12.6537f;
-            bottomCenterV.z = 12.6537f;
-            bottomRightV.z = 12.6537f;
-        }
-
-        private void FixedUpdate()
-        {
-            timer += Time.fixedDeltaTime;
-            if (timer > interval)
+            orig(self);
+            if (!hasRun)
             {
-                canvasGroup.alpha = Main.entireHUDalpha.Value;
-                // POSITIONS
-
-                topLeftV.x = Main.changeTopLeftPosX.Value;
-                topLeftV.y = Main.changeTopLeftPosY.Value;
-                topCenterV.x = Main.changeTopCenterPosX.Value;
-                topCenterV.y = Main.changeTopCenterPosY.Value;
-                topRightV.x = Main.changeTopRightPosX.Value;
-                topRightV.y = Main.changeTopRightPosY.Value;
-
-                leftCenterV.x = Main.changeLeftCenterPosX.Value;
-                leftCenterV.y = Main.changeLeftCenterPosY.Value;
-                rightCenterV.x = Main.changeRightCenterPosX.Value;
-                rightCenterV.y = Main.changeRightCenterPosY.Value;
-
-                bottomLeftV.x = Main.changeBottomLeftPosX.Value;
-                bottomLeftV.y = Main.changeBottomLeftPosY.Value;
-                bottomCenterV.x = Main.changeBottomCenterPosX.Value;
-                bottomCenterV.y = Main.changeBottomCenterPosY.Value;
-                bottomRightV.x = Main.changeBottomRightPosX.Value;
-                bottomRightV.y = Main.changeBottomRightPosY.Value;
-
-                // ROTATIONS
-
-                topLeftRotV.x = Main.changeTopLeftRotX.Value;
-                topLeftRotV.y = Main.changeTopLeftRotY.Value;
-                topLeftRotV.z = Main.changeTopLeftRotZ.Value;
-
-                topCenterRotV.x = Main.changeTopCenterRotX.Value;
-                topCenterRotV.y = Main.changeTopCenterRotY.Value;
-                topCenterRotV.z = Main.changeTopCenterRotZ.Value;
-
-                topRightRotV.x = Main.changeTopRightRotX.Value;
-                topRightRotV.y = Main.changeTopRightRotY.Value;
-                topRightRotV.z = Main.changeTopRightRotZ.Value;
-
-                leftCenterRotV.x = Main.changeLeftCenterRotX.Value;
-                leftCenterRotV.y = Main.changeLeftCenterRotY.Value;
-                leftCenterRotV.z = Main.changeLeftCenterRotZ.Value;
-
-                rightCenterRotV.x = Main.changeRightCenterRotX.Value;
-                rightCenterRotV.y = Main.changeRightCenterRotY.Value;
-                rightCenterRotV.z = Main.changeRightCenterRotZ.Value;
-
-                bottomLeftRotV.x = Main.changeBottomLeftRotX.Value;
-                bottomLeftRotV.y = Main.changeBottomLeftRotY.Value;
-                bottomLeftRotV.z = Main.changeBottomLeftRotZ.Value;
-
-                bottomCenterRotV.x = Main.changeBottomCenterRotX.Value;
-                bottomCenterRotV.y = Main.changeBottomCenterRotY.Value;
-                bottomCenterRotV.z = Main.changeBottomCenterRotZ.Value;
-
-                bottomRightRotV.x = Main.changeBottomRightRotX.Value;
-                bottomRightRotV.y = Main.changeBottomRightRotY.Value;
-                bottomRightRotV.z = Main.changeBottomRightRotZ.Value;
-
-                // POSITIONS
-
-                upperLeft.transform.position = topLeftV;
-                topCenter.transform.position = topCenterV;
-                upperRightReal.transform.position = topRightV;
-
-                leftCenter.transform.position = leftCenterV;
-                rightCenter.transform.position = rightCenterV;
-
-                bottomLeft.transform.position = bottomLeftV;
-                bottomCenter.transform.position = bottomCenterV;
-                bottomRight.transform.position = bottomRightV;
-
-                // ROTATIONS
-
-                upperLeft.transform.localEulerAngles = topLeftRotV;
-                topCenter.transform.localEulerAngles = topCenterRotV;
-                upperRightReal.transform.localEulerAngles = topRightRotV;
-
-                leftCenter.transform.localEulerAngles = leftCenterRotV;
-                rightCenter.transform.localEulerAngles = rightCenterRotV;
-
-                bottomLeft.transform.localEulerAngles = bottomLeftRotV;
-                bottomCenter.transform.localEulerAngles = bottomCenterRotV;
-                bottomRight.transform.localEulerAngles = bottomRightRotV;
-
-                // if (GameModeCatalog.FindGameModePrefabComponent("InfiniteTowerRun"))
-
-                buildLabel.SetActive(Main.showBuildLabel.Value);
-
-                scopeContainer.SetActive(Main.showScope.Value);
-
-                notifArea.SetActive(Main.showNotifArea.Value);
-
-                mapName.SetActive(Main.showMapName.Value);
-                mapSubtitle.SetActive(Main.showMapSubtitle.Value);
-
-                bottomLeft.SetActive(Main.showBottomLeft.Value);
-
-                hitmarker.enabled = Main.showHitmarker.Value;
-                crosshair.SetActive(Main.showCrosshair.Value);
-
-                chatBox.SetActive(Main.showChatBox.Value);
-                hpLevelVal.SetActive(Main.showHpLevelVal.Value);
-                hpLevelBar.SetActive(Main.showHpLevelBar.Value);
-
-                upperRight.SetActive(Main.showUpperRight.Value);
-
-                stupidWormgear.SetActive(Main.showStupidWormgear.Value);
-                timerText.SetActive(Main.showTimerText.Value);
-                timerBg.enabled = Main.showTimerBg.Value;
-
-                stage.SetActive(Main.showStage.Value);
-                ambient.SetActive(Main.showAmbient.Value);
-
-                diffBar.SetActive(Main.showDiffPanel.Value);
-
-                coolWormgear.SetActive(Main.showCoolWormgear.Value);
-                scroller.enabled = Main.showScroller.Value;
-                backdrop.SetActive(Main.showBackdrop.Value);
-                viewport.SetActive(Main.showViewport.Value);
-                marker.SetActive(Main.showMarker.Value);
-
-                outline.SetActive(Main.showOutline.Value);
-
-                artifact.SetActive(Main.showArtifact.Value);
-                objective.SetActive(Main.showObjective.Value);
-                artifactBg.enabled = Main.showArtifactBg.Value;
-                objectiveBg.enabled = Main.showObjectiveBg.Value;
-
-                bottomRight.SetActive(Main.showBottomRight.Value);
-
-                altEquipBg.SetActive(Main.showAltEquipBg.Value);
-                altEquipText.SetActive(Main.showAltEquipText.Value);
-
-                equipBg.SetActive(Main.showEquipBg.Value);
-                equipText.SetActive(Main.showEquipText.Value);
-
-                primaryText.SetActive(Main.showSkillText.Value);
-
-                secondaryText.SetActive(Main.showSkillText.Value);
-
-                utilityText.SetActive(Main.showSkillText.Value);
-
-                specialText.SetActive(Main.showSkillText.Value);
-
-                sprintText.SetActive(Main.showSprintText.Value);
-                sprintIcon.SetActive(Main.showSprintIcon.Value);
-
-                inventoryText.SetActive(Main.showInventoryText.Value);
-                inventoryIcon.SetActive(Main.showInventoryIcon.Value);
-
-                upperLeft.SetActive(Main.showUpperLeft.Value);
-                upperLeftOutline.enabled = Main.showUpperLeftOutline.Value;
-
-                moneyBg.SetActive(Main.showMoneyBg.Value);
-                moneyIcon.SetActive(Main.showMoneyIcon.Value);
-
-                lunarBg.SetActive(Main.showLunarBg.Value);
-                lunarIcon.SetActive(Main.showLunarIcon.Value);
-
-                bottomCenter.SetActive(Main.showBottomCenter.Value);
-
-                spectatorLabel.SetActive(Main.showSpectatorLabel.Value);
-
-                topCenter.SetActive(Main.showTopCenter.Value);
-                topCenterOutline.enabled = Main.showTopCenterOutline.Value;
-
-                bossLabel.SetActive(Main.showBossText.Value);
-                bossSubtitle.SetActive(Main.showBossSubtitle.Value);
-
-                /*
-                scoreboardEquipmentText.SetActive(Main.showScoreboardText.Value);
-                scoreboardItemText.SetActive(Main.showScoreboardText.Value);
-                scoreboardPlayerText.SetActive(Main.showScoreboardText.Value);
-                scoreboardBackground.enabled = Main.showScoreboardBackground.Value;
-                scoreboardOutlineLight.enabled = Main.showScoreboardOutlineLight.Value;
-                scoreboardOutlineDarkEquipment.enabled = Main.showScoreboardOutlinesDark.Value;
-                scoreboardOutlineDarkItem.enabled = Main.showScoreboardOutlinesDark.Value;
-                scoreboardOutlineDarkPlayer.enabled = Main.showScoreboardOutlinesDark.Value;
-                */
-
-                try
+                // Main.CHLogger.LogError("update pre set has run: " + hasRun);
+                self.gameObject.AddComponent<HUDControllerComponent>();
+                if (Run.instance && Run.instance is InfiniteTowerRun)
                 {
-                    if (objectiveArtifact.transform.GetChild(2).name == "EnemyInfoPanel(Clone)")
-                    {
-                        evolutionBg = objectiveArtifact.transform.GetChild(2).GetComponent<Image>();
-                        // enemyinfopanel result
-                        var innerFrame = evolutionBg.transform.GetChild(0).GetComponent<Image>();
-                        var monsterBodiesLabel = innerFrame.transform.GetChild(0).GetChild(0).gameObject;
-                        var monsterBodiesBg = innerFrame.transform.GetChild(0).GetChild(1).GetComponent<Image>();
-
-                        evolutionLabel = innerFrame.transform.GetChild(1).GetChild(0).gameObject;
-                        var inventoryDisplay = innerFrame.transform.GetChild(1).GetChild(1).GetComponent<Image>();
-
-                        monsterBodiesBg.enabled = Main.showEvolutionBg.Value;
-                        monsterBodiesLabel.SetActive(Main.showEvolutionLabel.Value);
-                        inventoryDisplay.enabled = Main.showEvolutionBg.Value;
-                        innerFrame.enabled = Main.showEvolutionBg.Value;
-                        evolutionBg.enabled = Main.showEvolutionBg.Value;
-                        evolutionLabel.SetActive(Main.showEvolutionLabel.Value);
-                    }
-                    simulacrumNextWaveUI.SetActive(Main.showSimulacrumNextWaveUI.Value);
-                    simulacrumCurrentWaveUI.SetActive(Main.showSimulacrumCurrentWaveUI.Value);
-                    simulacrumWaveIcon.SetActive(Main.showSimulacrumWaveIcon.Value);
-                    simulacrumBackdrop.SetActive(Main.showSimulacrumBackdrop.Value);
-                    simulacrumOutline.SetActive(Main.showSimulacrumOutline.Value);
-                    simulacrumTitle.SetActive(Main.showSimulacrumTitle.Value);
-                    if (Main.showSimulacrumWaveOptionalWaveInfo.Value == false && Main.showSimulacrumWaveTitle.Value == false)
-                    {
-                        simulacrumVerticalLayout.SetActive(false);
-                    }
-                    else
-                    {
-                        simulacrumVerticalLayout.SetActive(true);
-                        simulacrumWaveOptionalWaveInfo.SetActive(Main.showSimulacrumWaveOptionalWaveInfo.Value);
-                        simulacrumWaveTitle.SetActive(Main.showSimulacrumWaveTitle.Value);
-                    }
+                    self.gameObject.GetComponent<HUDControllerComponent>().isSimulacrum = true;
                 }
-                catch { }
-                /*
-                viendCorruption.transform.position = new Vector3(Main.changeViendCorruptionPosX.Value, Main.changeViendCorruptionPosY.Value, 10.7745f);
-                viendCorruptionFill.enabled = Main.showViendCorruptionColorfill.Value;
-                viendCorruptionFillBackdrop.SetActive(Main.showViendCorruptionBackfill.Value);
-                viendCorruptionText.SetActive(Main.showViendCorruptionText.Value);
-                viendCorruptionTextBackdrop.enabled = Main.showViendCorruptionTextBackdrop.Value;
-                */
 
-                timer = 0;
+                if (self.targetBodyObject && self.targetBodyObject.name == "VoidSurvivorBody(Clone)")
+                {
+                    self.gameObject.GetComponent<HUDControllerComponent>().isViend = true;
+                }
+                hud = self;
+
+                hasRun = true;
+                // Main.CHLogger.LogError("update POST set has run: " + hasRun);
             }
         }
     }
